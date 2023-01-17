@@ -28,6 +28,15 @@ export interface NodejsFunctionProps extends lambda.FunctionOptions {
    * @default handler
    */
   readonly handler?: string;
+  
+  /**
+   * Overwrite the default handler. Some usecases require a handler overwrite, for instance when the handler is 
+   * not exported in the entryfile. Real live example would be instrumenting the lambda function to send logs to 
+   * NewRelic, which with the current implementation requires an overwrite on the CFN node level. 
+   * 
+   * @default undefined
+   */
+  readonly handlerOverwrite?: string;
 
   /**
    * The runtime environment. Only runtimes of the Node.js family are
@@ -92,6 +101,7 @@ export class NodejsFunction extends lambda.Function {
     // Entry and defaults
     const entry = path.resolve(findEntry(id, props.entry));
     const handler = props.handler ?? 'handler';
+    const handlerOverwrite = props.handlerOverwrite
     const runtime = props.runtime ?? lambda.Runtime.NODEJS_14_X;
     const architecture = props.architecture ?? Architecture.X86_64;
     const depsLockFilePath = findLockFile(props.depsLockFilePath);
@@ -108,7 +118,7 @@ export class NodejsFunction extends lambda.Function {
         depsLockFilePath,
         projectRoot,
       }),
-      handler: `index.${handler}`,
+      handler: handlerOverwrite ?? `index.${handler}`,
     });
 
     // Enable connection reuse for aws-sdk
